@@ -1,0 +1,537 @@
+{
+  "name": "DIO - Assistente de Investimentos RPA",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "clientes",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "0eb16082-27e8-4010-aac0-65cf78486b54",
+      "name": "Receber Clientes do RPA",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'accepted', clientes_recebidos: $json.body.clientes.length, mensagem: 'Lote recebido e em processamento' } }}",
+        "options": {
+          "responseCode": 202
+        }
+      },
+      "id": "82559209-eb37-4f63-870a-09a4db946963",
+      "name": "Confirmar Recebimento",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        64,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "body.clientes",
+        "options": {
+          "destinationFieldName": "cliente"
+        }
+      },
+      "id": "4ba315c7-e1d5-488e-9aeb-3581c3f939c0",
+      "name": "Separar Clientes",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        288,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "nome",
+              "type": "string",
+              "value": "={{ $json.cliente.nome.trim() }}"
+            },
+            {
+              "id": "c2",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $json.cliente.email.trim().toLowerCase() }}"
+            },
+            {
+              "id": "c3",
+              "name": "saldo",
+              "type": "number",
+              "value": "={{ Number($json.cliente.saldo) }}"
+            },
+            {
+              "id": "c4",
+              "name": "perfil",
+              "type": "string",
+              "value": "={{ $json.cliente.perfil.trim().toLowerCase() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f7b7fc53-c1cd-4943-83d6-fc0ac31bd62c",
+      "name": "Normalizar Clientes",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        512,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8080/data/investimentos.csv",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "c45f9df0-1c9f-4818-ae59-776f5e7f3fee",
+      "name": "Buscar Catalogo de Investimentos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        288,
+        368
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "e64d9ffe-841a-4e80-a894-1ddde90f448d",
+      "name": "Converter CSV em Itens",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        512,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "i1",
+              "name": "perfil",
+              "type": "string",
+              "value": "={{ $json.perfil.trim().toLowerCase() }}"
+            },
+            {
+              "id": "i2",
+              "name": "produto",
+              "type": "string",
+              "value": "={{ $json.produto }}"
+            },
+            {
+              "id": "i3",
+              "name": "minimo",
+              "type": "number",
+              "value": "={{ Number($json.minimo) }}"
+            },
+            {
+              "id": "i4",
+              "name": "rentabilidade",
+              "type": "string",
+              "value": "={{ $json.rentabilidade }}"
+            },
+            {
+              "id": "i5",
+              "name": "risco",
+              "type": "string",
+              "value": "={{ $json.risco }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a3a9d5d6-1133-48a0-ac1c-ad8d09deeb55",
+      "name": "Normalizar Investimentos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "perfil",
+        "options": {}
+      },
+      "id": "1d8f28b6-dc92-4d75-b073-344a0e35afeb",
+      "name": "Cruzar Cliente e Investimento",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        992,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "to",
+              "type": "string",
+              "value": "={{ $json.email }}"
+            },
+            {
+              "id": "b2",
+              "name": "subject",
+              "type": "string",
+              "value": "={{ 'Sugestão educativa para o seu perfil ' + $json.perfil }}"
+            },
+            {
+              "id": "b3",
+              "name": "html_base",
+              "type": "string",
+              "value": "={{ '<p>Olá, <strong>' + $json.nome + '</strong>.</p><p>Para o perfil <strong>' + $json.perfil + '</strong>, encontramos o produto <strong>' + $json.produto + '</strong>, com aplicação mínima de R$ ' + $json.minimo.toFixed(2) + ' e referência de rentabilidade ' + $json.rentabilidade + '.</p><p>Seu saldo informado é de R$ ' + $json.saldo.toFixed(2) + '.</p><p><small>Conteúdo educativo. Não há promessa de ganhos nem recomendação individual de investimento.</small></p>' }}"
+            },
+            {
+              "id": "b4",
+              "name": "prompt",
+              "type": "string",
+              "value": "={{ 'Você é um assistente de comunicação financeira responsável. Escreva um e-mail curto, profissional e acolhedor em português brasileiro para o cliente ' + $json.nome + '. CONTEXTO: perfil do investidor: ' + $json.perfil + '; produto encontrado no catálogo: ' + $json.produto + '; aplicação mínima: R$ ' + Number($json.minimo).toFixed(2) + '; saldo informado: R$ ' + Number($json.saldo).toFixed(2) + '; rentabilidade de referência: ' + $json.rentabilidade + '; risco: ' + $json.risco + '. REGRAS: não prometa ganhos; não diga que o investimento é garantido; não invente números, taxas ou benefícios; não ordene que o cliente invista; deixe claro que é conteúdo educativo; recomende avaliar condições, riscos e adequação; não mencione inteligência artificial, automação ou banco de dados. FORMATO: retorne somente HTML simples, sem Markdown e sem bloco de código; use no máximo 180 palavras; comece com uma saudação; explique a opção encontrada; apresente uma lista curta com produto, aplicação mínima, rentabilidade de referência e risco; finalize com aviso educativo e despedida profissional.' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "36850f5b-67b2-415f-906b-819756b4460f",
+      "name": "Preparar Briefing",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1216,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e1",
+              "name": "to",
+              "type": "string",
+              "value": "={{ $('Preparar Briefing').item.json.to }}"
+            },
+            {
+              "id": "e2",
+              "name": "subject",
+              "type": "string",
+              "value": "={{ $('Preparar Briefing').item.json.subject }}"
+            },
+            {
+              "id": "e3",
+              "name": "html",
+              "type": "string",
+              "value": "={{ $json.choices[0].message.content }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "34ba8040-bc3d-4698-8c8c-5ce1595cc215",
+      "name": "Padronizar Email",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1696,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "mail",
+              "leftValue": "={{ $json.to }}",
+              "rightValue": "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$",
+              "operator": {
+                "type": "string",
+                "operation": "regex"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ac26d353-3255-4f78-aa26-5746844743a8",
+      "name": "Email Valido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1920,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.to }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "2942ccd8-15aa-4158-a9dc-49706db55b2a",
+      "name": "Enviar Email com Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2144,
+        128
+      ],
+      "executeOnce": false,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "x1",
+              "name": "status",
+              "type": "string",
+              "value": "email_invalido"
+            },
+            {
+              "id": "x2",
+              "name": "email",
+              "type": "string",
+              "value": "={{ $json.to }}"
+            },
+            {
+              "id": "x3",
+              "name": "proxima_acao",
+              "type": "string",
+              "value": "Revisar cadastro ou contatar por outro canal"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a83ba1b4-bbf9-4d54-8411-10f469c525b4",
+      "name": "Registrar Contato Invalido",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2144,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  model: \"openai/gpt-4o-mini\",\n  temperature: 0.4,\n  messages: [\n    {\n      role: \"user\",\n      content: $json.prompt\n    }\n  ]\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1440,
+        224
+      ],
+      "id": "4c7165c5-5487-4e0c-bc45-9aa84b4b79bc",
+      "name": "Personalizar Email com OpenRouter"
+    }
+  ],
+  "connections": {
+    "Receber Clientes do RPA": {
+      "main": [
+        [
+          {
+            "node": "Confirmar Recebimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmar Recebimento": {
+      "main": [
+        [
+          {
+            "node": "Separar Clientes",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Buscar Catalogo de Investimentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separar Clientes": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Clientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Clientes": {
+      "main": [
+        [
+          {
+            "node": "Cruzar Cliente e Investimento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Catalogo de Investimentos": {
+      "main": [
+        [
+          {
+            "node": "Converter CSV em Itens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Converter CSV em Itens": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Investimentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Investimentos": {
+      "main": [
+        [
+          {
+            "node": "Cruzar Cliente e Investimento",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Cruzar Cliente e Investimento": {
+      "main": [
+        [
+          {
+            "node": "Preparar Briefing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Briefing": {
+      "main": [
+        [
+          {
+            "node": "Personalizar Email com OpenRouter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Padronizar Email": {
+      "main": [
+        [
+          {
+            "node": "Email Valido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Valido?": {
+      "main": [
+        [
+          {
+            "node": "Enviar Email com Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar Contato Invalido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personalizar Email com OpenRouter": {
+      "main": [
+        [
+          {
+            "node": "Padronizar Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  }
+}
