@@ -1,0 +1,4 @@
+perfil,produto,minimo,rentabilidade,risco
+conservador,CDB com liquidez diaria,1000,100% do CDI,baixo
+moderado,Tesouro IPCA+,500,IPCA + 6% a.a.,medio
+arrojado,Fundo de acoes diversificado,1000,variavel,alto
