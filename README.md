@@ -108,6 +108,20 @@ flowchart TD
 - OpenRouter em `https://openrouter.ai/api/v1/chat/completions`;
 - Gmail OAuth2 para o teste controlado de envio.
 
+### Adaptação técnica: nó de IA para HTTP Request
+
+Durante a implementação, a etapa de personalização inicialmente planejada com um nó nativo de IA foi substituída por um **HTTP Request** direcionado à API do OpenRouter. No ambiente n8n Self-Hosted utilizado no projeto, a configuração anterior não concluiu a execução de forma estável, enquanto a chamada HTTP permitiu validar diretamente o endpoint, o modelo, o corpo JSON e a resposta retornada.
+
+A alteração não modificou o objetivo funcional do desafio: a IA continua responsável por personalizar cada mensagem a partir do perfil e do produto associados ao cliente. A adaptação apenas mudou a forma de integração e trouxe benefícios adicionais:
+
+- compatibilidade com o ambiente local executado em Docker;
+- reutilização segura da credencial Header Auth do OpenRouter;
+- controle explícito do modelo, da temperatura e das mensagens enviadas;
+- maior transparência para diagnóstico, testes e documentação;
+- independência de uma credencial direta do provedor OpenAI.
+
+O workflow público mantém essa decisão visível no nó **Personalizar Email com OpenRouter**, facilitando a avaliação técnica e a reprodução do projeto.
+
 ## Regras de negócio e IA responsável
 
 - cliente e produto são associados pelo campo `perfil`;
